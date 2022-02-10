@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 import { Observable, throwError } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { catchError, map, tap } from 'rxjs/operators';
 
 import { Product } from './product';
 import { Supplier } from '../suppliers/supplier';
@@ -18,6 +18,16 @@ export class ProductService {
   // Declarative
   // declare an observable property and assign it directl to the result of the http get
   products$ = this.http.get<Product[]>(this.productsUrl).pipe(
+    map((products) =>
+      products.map(
+        (p) =>
+          ({
+            ...p,
+            price: p.price * 1.5,
+            searchKey: [p.productName],
+          } as Product)
+      )
+    ),
     tap((data) => console.log('Products: ', JSON.stringify(data))),
     catchError(this.handleError)
   );
