@@ -2,29 +2,48 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 import { Observable, throwError } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+import { catchError, map, tap } from 'rxjs/operators';
 
 import { Product } from './product';
 import { Supplier } from '../suppliers/supplier';
 import { SupplierService } from '../suppliers/supplier.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ProductService {
   private productsUrl = 'api/products';
   private suppliersUrl = this.supplierService.suppliersUrl;
 
-  constructor(private http: HttpClient,
-              private supplierService: SupplierService) { }
+  // Declarative
+  // declare an observable property and assign it directl to the result of the http get
+  products$ = this.http.get<Product[]>(this.productsUrl).pipe(
+    map((products) =>
+      products.map(
+        (p) =>
+          ({
+            ...p,
+            price: p.price * 1.5,
+            searchKey: [p.productName],
+          } as Product)
+      )
+    ),
+    tap((data) => console.log('Products: ', JSON.stringify(data))),
+    catchError(this.handleError)
+  );
+  constructor(
+    private http: HttpClient,
+    private supplierService: SupplierService
+  ) {}
 
-  getProducts(): Observable<Product[]> {
-    return this.http.get<Product[]>(this.productsUrl)
-      .pipe(
-        tap(data => console.log('Products: ', JSON.stringify(data))),
-        catchError(this.handleError)
-      );
-  }
+  // Move from procedural to declarative
+  // getProducts(): Observable<Product[]> {
+  //   return this.http.get<Product[]>(this.productsUrl)
+  //     .pipe(
+  //       tap(data => console.log('Products: ', JSON.stringify(data))),
+  //       catchError(this.handleError)
+  //     );
+  // }
 
   private fakeProduct(): Product {
     return {
@@ -35,7 +54,7 @@ export class ProductService {
       price: 8.9,
       categoryId: 3,
       // category: 'Toolbox',
-      quantityInStock: 30
+      quantityInStock: 30,
     };
   }
 
@@ -54,5 +73,4 @@ export class ProductService {
     console.error(err);
     return throwError(errorMessage);
   }
-
 }
